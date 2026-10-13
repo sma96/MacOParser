@@ -47,8 +47,12 @@ final public class IntegrityHelper {
     
     
     public func loadCommand() {
-        print(UInt32(bigEndian: loadCommands.codeSignature?.sha256CD?.nCodeSlots ?? 0))
-        
+        guard let hashes = loadCommands.codeSignature?.sha256CD?.codeSlotsHash else {
+            return
+        }
+        for hash in hashes {
+            print(hash.map { String(format: "%02x", $0) }.joined())
+        }
 //        data.withUnsafeBytes {
 //            var offset = headerSize
 //            

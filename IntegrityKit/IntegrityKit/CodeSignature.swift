@@ -47,7 +47,7 @@ extension CodeSignature {
         }
     }
     
-    var codeDirectories: [CS_CodeDirectory] {
+    var codeDirectories: [CodeDirectory] {
         let baseOffset = Int(linkEditData.dataoff)
         
         return blobIndices.compactMap {
@@ -58,7 +58,9 @@ extension CodeSignature {
                 let magic = UInt32(bigEndian: genericBlob.magic)
                 
                 if magic == CSMAGIC_CODEDIRECTORY {
-                    return $0.load(fromByteOffset: Int(linkEditData.dataoff) + offSet, as: CS_CodeDirectory.self)
+                    let cd = $0.load(fromByteOffset: Int(linkEditData.dataoff) + offSet, as: CS_CodeDirectory.self)
+                    
+                    return CodeDirectory(cd: cd, data: data, offset: Int(linkEditData.dataoff) + offSet)
                 } else {
                     return nil
                 }
@@ -66,9 +68,9 @@ extension CodeSignature {
         }
     }
     
-    var sha256CD: CS_CodeDirectory? {
+    var sha256CD: CodeDirectory? {
         codeDirectories.first {
-            $0.hashType == CS_HASHTYPE_SHA256
+            $0.getHashType() == CS_HASHTYPE_SHA256
         }
     }
 }
