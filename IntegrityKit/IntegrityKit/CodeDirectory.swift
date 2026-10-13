@@ -8,6 +8,14 @@
 import Foundation
 import MachO
 
+enum SpecialSlot: Int {
+    case INFOSLOT      = 1
+    case REQUIREMENTS  = 2
+    case RESOURCEDIR   = 3
+    case APPLICATION   = 4
+    case ENTITLEMENTS  = 5
+}
+
 struct CodeDirectory {
     private let cd: CS_CodeDirectory
     private var data: Data
@@ -35,6 +43,14 @@ extension CodeDirectory {
         (-specialSlotCount..<0).compactMap { hash(forSlot: $0) }
     }
     
+    public var infoHash: Data? {
+        hash(for: .INFOSLOT)
+    }
+
+    public var resourceHash: Data? {
+        hash(for: .RESOURCEDIR)
+    }
+    
     func getHashType() -> Int {
         return hashType
     }
@@ -51,5 +67,9 @@ extension CodeDirectory {
         let hash = data.subdata(in: start..<end)
         
         return hash
+    }
+
+    func hash(for slot: SpecialSlot) -> Data? {
+        hash(forSlot: -slot.rawValue)
     }
 }
