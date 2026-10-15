@@ -9,49 +9,60 @@ import Foundation
 
 // objective-c에서 swift 함수를 호출하기 위해 @objc 사용
 @objc public final class IntegrityChecker: NSObject {
-    private var machOParser: MachOParser?
+    private let makeProvider: () throws -> CodeSlotProviding
     
-    public override init() { }
     
-    func loadMachOFile() throws {
-        self.machOParser = try MachOParser()
+    public override convenience init() {
+        self.init(makeProvider: { try MachOParser() })
+    }
+    
+    init(makeProvider: @escaping () throws -> CodeSlotProviding) {
+        self.makeProvider = makeProvider
     }
 }
 
 extension IntegrityChecker {
     @objc public var isTampered: Bool {
-        checkCodeSlotHash()
+        checkPageHash()
     }
     
-    func getCodeSignature() throws -> CodeSignature {
-        if let codeSignature = machOParser?.codeSignature {
-            return codeSignature
-        } else {
-            throw MachOError.codeSignatureNotFound
-        }
-    }
-    
-    public func checkCodeSlotHash() -> Bool {
+    private func checkCodeSlotHash() -> Bool {
         do {
-            try loadMachOFile()
-            
+            let codeSlotProvider = try makeProvider()
             let originCodeSlotHash = try getOriginCodeSlotHash()
-            
-            guard let codeSlotHash = machOParser?.codeSlotHash else {
+
+            guard let codeSlotHash = codeSlotProvider.codeSlotHash?.map({ $0.hexString }) else {
                 return true
             }
             guard originCodeSlotHash.count == codeSlotHash.count else {
                 return true
             }
-            
             return originCodeSlotHash != codeSlotHash
         } catch {
             print(error.localizedDescription)
+            return true
         }
-        return false
     }
-    
-    public func getOriginCodeSlotHash() throws -> [String] {
+
+    private func checkPageHash() -> Bool {
+        do {
+            let codeSlotProvider = try makeProvider()
+            let originCodeSlotHash = try getOriginCodeSlotHash()
+
+            guard let pageHash = codeSlotProvider.pageHash?.map({ $0.hexString }) else {
+                return true
+            }
+            guard originCodeSlotHash.count == pageHash.count else {
+                return true
+            }
+            return originCodeSlotHash != pageHash
+        } catch {
+            print(error.localizedDescription)
+            return true
+        }
+    }
+
+    private func getOriginCodeSlotHash() throws -> [String] {
         guard let url = Bundle.main.url(forResource: "Integrity", withExtension: "plist") else {
             throw MachOError.fileNotFound
         }

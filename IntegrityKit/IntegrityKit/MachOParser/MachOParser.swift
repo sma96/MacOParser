@@ -3,7 +3,6 @@
 import Foundation
 import MachO
 
-
 final internal class MachOParser {
     private let header: mach_header_64
     private let data: Data
@@ -47,19 +46,20 @@ final internal class MachOParser {
 }
 
 extension MachOParser {
-    public var codeSignature: CodeSignature? {
+    private var segment64: [LoadCommandInfo]? {
+        loadCommands.segment64
+    }
+    private var codeSignature: CodeSignature? {
         loadCommands.codeSignature
     }
-    
-    public var codeSlotHash: [String]? {
-        loadCommands.codeSignature?.sha256CD?.codeSlotsHash.compactMap { $0.hexString }
+}
+
+extension MachOParser: CodeSlotProviding {
+    public var codeSlotHash: [Data]? {
+        loadCommands.codeSignature?.sha256CD?.codeSlotsHash.map { $0 }
     }
     
-    func getCodeSignature() throws -> CodeSignature {
-        if let codeSignature = codeSignature {
-            return codeSignature
-        } else {
-            throw MachOError.codeSignatureNotFound
-        }
+    public var pageHash: [Data]? {
+        loadCommands.codeSignature?.sha256CD?.pageHash.map { $0 }
     }
 }

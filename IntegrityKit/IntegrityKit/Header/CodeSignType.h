@@ -80,6 +80,13 @@ typedef struct __CS_CodeDirectory {
     uint32_t spare2;                /* unused (must be zero) */
  
     char end_earliest[0];
+    
+    /* Version 0x20100 */
+    uint32_t scatterOffset;         /* offset of optional scatter vector */
+    char end_withScatter[0];
+
     /* followed by dynamic content as located by offset fields above */
+    uint32_t teamOffset;            /* offset of optional team identifier */
+    char end_withTeam[0];
 } CS_CodeDirectory;
  

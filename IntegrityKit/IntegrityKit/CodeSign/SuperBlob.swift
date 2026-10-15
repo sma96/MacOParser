@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct SuperBlob {
+struct CodeSignSuperBlob {
     private let superBlob: CS_SuperBlob
     private let data: Data
     private let offset: Int
@@ -19,12 +19,12 @@ struct SuperBlob {
     }
 }
 
-extension SuperBlob {
+extension CodeSignSuperBlob {
     var blobIndices: [CS_BlobIndex] {
         data.withUnsafeBytes {
             let startBlobIndex = Int(offset) + MemoryLayout<CS_SuperBlob>.size
             let blobSize = MemoryLayout<CS_BlobIndex>.size
-            let blobCount = UInt32(bigEndian: superBlob.count)
+            let blobCount = superBlob.count.byteSwapped
             var result = [CS_BlobIndex]()
 
             for i in 0..<blobCount {

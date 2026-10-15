@@ -25,21 +25,21 @@ extension CodeSignature {
         }
     }
     
-    var superBlob: SuperBlob {
+    var superBlob: CodeSignSuperBlob {
         let superBlob = data.withUnsafeBytes { $0.load(fromByteOffset: Int(linkEditData.dataoff), as: CS_SuperBlob.self) }
         
-        return SuperBlob(superBlob: superBlob, data: data, offset: Int(linkEditData.dataoff))
+        return CodeSignSuperBlob(superBlob: superBlob, data: data, offset: Int(linkEditData.dataoff))
     }
     
     var codeDirectories: [CodeDirectory] {
         let baseOffset = Int(linkEditData.dataoff)
         
         return superBlob.blobIndices.compactMap {
-            let offSet = Int(UInt32(bigEndian: $0.offset))
+            let offSet = Int($0.offset.byteSwapped)
             
             return data.withUnsafeBytes {
                 let genericBlob = $0.load(fromByteOffset: baseOffset + offSet, as: CS_GenericBlob.self)
-                let magic = UInt32(bigEndian: genericBlob.magic)
+                let magic = genericBlob.magic.byteSwapped
                 
                 if magic == CSMAGIC_CODEDIRECTORY {
                     let cd = $0.load(fromByteOffset: Int(linkEditData.dataoff) + offSet, as: CS_CodeDirectory.self)
@@ -56,5 +56,13 @@ extension CodeSignature {
         codeDirectories.first {
             $0.getHashType() == CS_HASHTYPE_SHA256
         }
+    }
+    
+    var pageHash: [Data]? {
+        sha256CD?.pageHash
+    }
+    
+    var teamId: String? {
+        sha256CD?.teamId
     }
 }

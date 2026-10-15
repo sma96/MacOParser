@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CryptoKit
 import MachO
 
 struct CodeDirectory {
@@ -21,26 +22,59 @@ struct CodeDirectory {
 }
 
 extension CodeDirectory {
-    private var codeSlotCount: Int { Int(UInt32(bigEndian: cd.nCodeSlots)) }
-    private var specialSlotCount: Int { Int(UInt32(bigEndian: cd.nSpecialSlots)) }
-    private var hashSize: Int { Int(UInt8(bigEndian: cd.hashSize)) }
-    private var hashOffset: Int { Int(UInt32(bigEndian: cd.hashOffset)) }
-    private var hashType: Int { Int(UInt8(bigEndian: cd.hashType)) }
+    private var codeSlotCount: Int { Int(cd.nCodeSlots.byteSwapped) }
+    private var specialSlotCount: Int { Int(cd.nSpecialSlots.byteSwapped) }
+    private var hashSize: Int { Int(cd.hashSize.byteSwapped) }
+    private var hashOffset: Int { Int(cd.hashOffset.byteSwapped) }
+    private var hashType: Int { Int(cd.hashType.byteSwapped) }
+    private var codeLimit: Int { Int(cd.codeLimit.byteSwapped) }
+    private var pageSize: Int { Int(cd.pageSize.byteSwapped) }
+    private var teamOffset: Int { Int(cd.teamOffset.byteSwapped) }
     
-    public var codeSlotsHash: [Data] {
-        (0..<codeSlotCount).compactMap { hash(forSlot: $0) }
+    var codeSlotsHash: [Data] {
+        return (0..<codeSlotCount).compactMap { hash(forSlot: $0) }
     }
     
-    public var specialSlotsHash: [Data] {
+    var specialSlotsHash: [Data] {
         (-specialSlotCount..<0).compactMap { hash(forSlot: $0) }
     }
     
-    public var infoHash: Data? {
+    var infoHash: Data? {
         hash(for: .INFOSLOT)
     }
 
-    public var resourceHash: Data? {
+    var resourceHash: Data? {
         hash(for: .RESOURCEDIR)
+    }
+    
+    var pageHash: [Data] {
+        let pageBytes = 1 << pageSize
+
+        return stride(from: 0, to: codeLimit, by: pageBytes).map { start in
+            let end = min(start + pageBytes, codeLimit)
+            let page = data.subdata(in: start..<end)
+            
+            return Data(SHA256.hash(data: page))
+        }
+     }
+    
+    var teamId: String? {
+        data.withUnsafeBytes {
+            guard teamOffset > 0 else {
+                return nil
+            }
+            
+            let offset = offset + teamOffset
+            
+            guard let ptr = $0.baseAddress?
+                .advanced(by: offset)
+                .assumingMemoryBound(to: CChar.self)
+            else {
+                return nil
+            }
+            
+            return String(cString: ptr)
+        }
     }
     
     public func getHashType() -> Int {

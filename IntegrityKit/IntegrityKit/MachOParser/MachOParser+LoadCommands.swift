@@ -9,15 +9,21 @@ import Foundation
 import MachO
 
 struct LoadCommandInfo {
-    public var loadCommand: load_command
-    public var offset: Int
+    var loadCommand: load_command
+    var offset: Int
 }
 
 // 가독성과 사용성을 고려하여 Sequence를 준수하여 구현했습니다.
 struct LoadCommands: Sequence {
-    public let data: Data
-    public let numberOfCommands: Int
-    public let startOffset: Int
+    private let data: Data
+    private let numberOfCommands: Int
+    private let startOffset: Int
+    
+    init(data: Data, numberOfCommands: Int, startOffset: Int) {
+        self.data = data
+        self.numberOfCommands = numberOfCommands
+        self.startOffset = startOffset
+    }
     
     func makeIterator() -> LoadCommandsIterator {
         LoadCommandsIterator(data: data, numberOfCommands: numberOfCommands, startOffset: startOffset)
@@ -42,8 +48,8 @@ extension LoadCommands {
 struct LoadCommandsIterator: IteratorProtocol {
     typealias Element = LoadCommandInfo
     
-    public let data: Data
-    public let numberOfCommands: Int
+    private let data: Data
+    private let numberOfCommands: Int
 
     private var nextOffset: Int = 0
     private var nextIndex: Int = 0
