@@ -8,13 +8,12 @@
 import Foundation
 import MachO
 
-//typealias LoadCommand = load_command
-
 struct LoadCommandInfo {
     public var loadCommand: load_command
     public var offset: Int
 }
 
+// 가독성과 사용성을 고려하여 Sequence를 준수하여 구현했습니다.
 struct LoadCommands: Sequence {
     public let data: Data
     public let numberOfCommands: Int
@@ -35,8 +34,7 @@ extension LoadCommands {
         }
     }
     var codeSignature: CodeSignature? {
-        self
-            .first { $0.loadCommand.cmd == LC_CODE_SIGNATURE }
+        self.first { $0.loadCommand.cmd == LC_CODE_SIGNATURE }
             .map { CodeSignature(data: data, offset: $0.offset) }
     }
 }

@@ -25,32 +25,16 @@ extension CodeSignature {
         }
     }
     
-    var superBlob: CS_SuperBlob {
-        data.withUnsafeBytes {
-            $0.load(fromByteOffset: Int(linkEditData.dataoff), as: CS_SuperBlob.self)
-        }
-    }
-    
-    var blobIndices: [CS_BlobIndex] {
-        data.withUnsafeBytes {
-            let startBlobIndex = Int(linkEditData.dataoff) + MemoryLayout<CS_SuperBlob>.size
-            let blobSize = MemoryLayout<CS_BlobIndex>.size
-            let blobCount = UInt32(bigEndian: superBlob.count)
-            var result = [CS_BlobIndex]()
-
-            for i in 0..<blobCount {
-                let blob = $0.load(fromByteOffset: startBlobIndex + Int(i) * blobSize, as: CS_BlobIndex.self)
-                
-                result.append(blob)
-            }
-            return result
-        }
+    var superBlob: SuperBlob {
+        let superBlob = data.withUnsafeBytes { $0.load(fromByteOffset: Int(linkEditData.dataoff), as: CS_SuperBlob.self) }
+        
+        return SuperBlob(superBlob: superBlob, data: data, offset: Int(linkEditData.dataoff))
     }
     
     var codeDirectories: [CodeDirectory] {
         let baseOffset = Int(linkEditData.dataoff)
         
-        return blobIndices.compactMap {
+        return superBlob.blobIndices.compactMap {
             let offSet = Int(UInt32(bigEndian: $0.offset))
             
             return data.withUnsafeBytes {
