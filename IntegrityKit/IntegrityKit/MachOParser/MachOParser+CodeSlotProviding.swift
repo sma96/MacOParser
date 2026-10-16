@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol CodeSlotProviding {
+protocol CodeHashProviding {
     var codeSlotHash: [Data]? { get }
     var pageHash: [Data]? { get }
 }

@@ -31,14 +31,22 @@ struct LoadCommands: Sequence {
 }
 
 extension LoadCommands {
-    var segment64: [LoadCommandInfo]? {
-        self.compactMap {
-            guard $0.loadCommand.cmd == LC_SEGMENT_64 else {
+    var segment64: [SegmentCommand]? {
+        self.compactMap { info in
+            guard info.loadCommand.cmd == LC_SEGMENT_64 else {
                 return nil
             }
-            return $0
+            let segment = data.withUnsafeBytes {
+                $0.load(fromByteOffset: info.offset, as: segment_command_64.self)
+            }
+            return SegmentCommand(segment: segment, data: data, offset: info.offset)
         }
     }
+    
+    var textSegment: SegmentCommand? {
+        segment64?.first { $0.segName == "__TEXT" }
+    }
+    
     var codeSignature: CodeSignature? {
         self.first { $0.loadCommand.cmd == LC_CODE_SIGNATURE }
             .map { CodeSignature(data: data, offset: $0.offset) }

@@ -89,4 +89,4 @@ typedef struct __CS_CodeDirectory {
     uint32_t teamOffset;            /* offset of optional team identifier */
     char end_withTeam[0];
 } CS_CodeDirectory;
- 
+

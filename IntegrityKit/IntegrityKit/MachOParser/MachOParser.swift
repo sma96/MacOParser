@@ -2,8 +2,9 @@
 
 import Foundation
 import MachO
+import CryptoKit
 
-final internal class MachOParser {
+final class MachOParser {
     private let header: mach_header_64
     private let data: Data
     
@@ -21,7 +22,7 @@ final internal class MachOParser {
         LoadCommands(data: data, numberOfCommands: Int(header.ncmds), startOffset: headerSize)
     }
     
-    public init() throws {
+    init() throws {
         guard let filePath = Bundle.main.executableURL else {
             throw MachOError.fileNotFound
         }
@@ -46,15 +47,16 @@ final internal class MachOParser {
 }
 
 extension MachOParser {
-    private var segment64: [LoadCommandInfo]? {
+    private var segment64: [SegmentCommand]? {
         loadCommands.segment64
     }
+    
     private var codeSignature: CodeSignature? {
-        loadCommands.codeSignature
+        return loadCommands.codeSignature
     }
 }
 
-extension MachOParser: CodeSlotProviding {
+extension MachOParser: CodeHashProviding {
     public var codeSlotHash: [Data]? {
         loadCommands.codeSignature?.sha256CD?.codeSlotsHash.map { $0 }
     }
@@ -63,3 +65,4 @@ extension MachOParser: CodeSlotProviding {
         loadCommands.codeSignature?.sha256CD?.pageHash.map { $0 }
     }
 }
+

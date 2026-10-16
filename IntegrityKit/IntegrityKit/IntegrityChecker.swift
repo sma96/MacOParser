@@ -9,29 +9,29 @@ import Foundation
 
 // objective-c에서 swift 함수를 호출하기 위해 @objc 사용
 @objc public final class IntegrityChecker: NSObject {
-    private let makeProvider: () throws -> CodeSlotProviding
+    private let makeProvider: () throws -> CodeHashProviding
     
     
     public override convenience init() {
         self.init(makeProvider: { try MachOParser() })
     }
     
-    init(makeProvider: @escaping () throws -> CodeSlotProviding) {
+    init(makeProvider: @escaping () throws -> CodeHashProviding) {
         self.makeProvider = makeProvider
     }
 }
 
 extension IntegrityChecker {
     @objc public var isTampered: Bool {
-        checkPageHash()
+        checkCodeSlotHash() || checkPageHash()
     }
     
     private func checkCodeSlotHash() -> Bool {
         do {
-            let codeSlotProvider = try makeProvider()
+            let codeHashProvider = try makeProvider()
             let originCodeSlotHash = try getOriginCodeSlotHash()
 
-            guard let codeSlotHash = codeSlotProvider.codeSlotHash?.map({ $0.hexString }) else {
+            guard let codeSlotHash = codeHashProvider.codeSlotHash?.map({ $0.hexString }) else {
                 return true
             }
             guard originCodeSlotHash.count == codeSlotHash.count else {
@@ -46,10 +46,10 @@ extension IntegrityChecker {
 
     private func checkPageHash() -> Bool {
         do {
-            let codeSlotProvider = try makeProvider()
+            let codeHashProvider = try makeProvider()
             let originCodeSlotHash = try getOriginCodeSlotHash()
 
-            guard let pageHash = codeSlotProvider.pageHash?.map({ $0.hexString }) else {
+            guard let pageHash = codeHashProvider.pageHash?.map({ $0.hexString }) else {
                 return true
             }
             guard originCodeSlotHash.count == pageHash.count else {
